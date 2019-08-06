@@ -13,7 +13,7 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
-
+master_doc = 'index'
 
 from recommonmark.parser import CommonMarkParser
 
@@ -29,7 +29,7 @@ project = 'snail-lib'
 copyright = '2019, slow-snail'
 author = 'slow-snail'
 
-master_doc = 'index'
+
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
