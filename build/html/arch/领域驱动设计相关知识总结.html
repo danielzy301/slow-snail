@@ -1,0 +1,173 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <title>DDD领域驱动设计相关知识总结 &#8212; snail-lib  文档</title>
+    <link rel="stylesheet" href="../_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="索引" href="../genindex.html" />
+    <link rel="search" title="搜索" href="../search.html" />
+    <link rel="next" title="微服务2.0技术栈选型手册" href="../java/微服务2.0技术栈选型手册.html" />
+    <link rel="prev" title="领域驱动设计之领域模型" href="领域驱动设计之领域模型.html" />
+     
+    
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>
+    
+    
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="总目录"
+             accesskey="I">索引</a></li>
+        <li class="right" >
+          <a href="../java/微服务2.0技术栈选型手册.html" title="微服务2.0技术栈选型手册"
+             accesskey="N">下一页</a> |</li>
+        <li class="right" >
+          <a href="领域驱动设计之领域模型.html" title="领域驱动设计之领域模型"
+             accesskey="P">上一页</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">snail-lib  文档</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="ddd">
+<h1><strong>DDD</strong>领域驱动设计相关知识总结<a class="headerlink" href="#ddd" title="永久链接至标题">¶</a></h1>
+<p><a class="reference external" href="https://medium.com/&#64;leighton.wong?source=post_page---------------------------"><img alt="https://miro.medium.com/fit/c/96/96/0*FZYA6yjTWAIEpKux.jpg" src="https://miro.medium.com/fit/c/96/96/0*FZYA6yjTWAIEpKux.jpg" />王大磊</a></p>
+<p><a class="reference external" href="https://medium.com/&#64;leighton.wong?source=post_page---------------------------">王大磊</a>Follow</p>
+<p><a class="reference external" href="https://medium.com/&#64;leighton.wong/ddd%E9%A2%86%E5%9F%9F%E9%A9%B1%E5%8A%A8%E8%AE%BE%E8%AE%A1%E7%9B%B8%E5%85%B3%E7%9F%A5%E8%AF%86%E6%80%BB%E7%BB%93-87ca10481550?source=post_page---------------------------">Mar 17, 2017</a> · 9 min read</p>
+<p><strong>DDD</strong>（Domain Drive Design）与TDD测试驱动设计都是不同的软件架构设计理论，与具体使用的技术手段无关。传统的软件设计逻辑基本都是从用户交互角度出发，软件核心的业务逻辑也都是增删改查等一系列数据实体的操作，更多的是关心的数据的转换。对于简单的业务逻辑抽象，传统的设计方法更直接，实现也更简单。而对于比较复杂的业务逻辑，领域驱动设计能够更好的划分不同业务之间的边界，更容易在开发中分离责任，同时也让服务健壮性和扩展性更好，但<strong>DDD</strong>也不是银弹，不是所有的软件开发都应该使用这种模式，这种模式对开发的要求更高，复杂性也更高，本文主要讨论在软件设计中应用<strong>DDD</strong>的一些相关的关键设计方式和实现手段，以及他们的一些优缺点。</p>
+<p>首先，本文所涉及的关键词有：</p>
+<ol class="simple">
+<li><p><strong>DDD</strong>——Domain Drive Design</p></li>
+<li><p>Micro Service</p></li>
+<li><p>CQRS——Command Query Responsibility Segregation</p></li>
+<li><p>EDA——Event Driven Architechture</p></li>
+<li><p>ES——Event Sourcing</p></li>
+<li><p>Akka：Scala的一个非常优秀的Actor Model的实现</p></li>
+<li><p>Lagom：Lightbend（前身TypeSafe）的微服务框架</p></li>
+</ol>
+<p><strong>DDD</strong>只是一种设计思想，其中包含了很多抽象的设计概念，比如领域、值对象、服务、仓库、聚合等，我不太熟悉，这里不做详细介绍，单纯的讨论设计方法意义不大，就跟敏捷开发似的有很多成熟的理论框架比如SCRUM，其实事实上真正应用起来都不那么的绝对按照理论来规划，<strong>DDD</strong>也只是一种高度的软件设计的表现层，而我们更关心具体的<strong>DDD</strong>的实现方式以及里边真正有趣的能够带来思想变革的地方。</p>
+<p>说起<strong>DDD</strong>其实跟现在很火的微服务有很多关联的地方，知道微服务的也远比知道<strong>DDD</strong>的人多一些，我想微服务可以看作是<strong>DDD</strong>实践从理论到形式的一种简化，以更方便的让人们接受和理解。微服务炒了这么多年，而真正实践很完美的案例其实也并不那么多，有以下几个原因：</p>
+<ol class="simple">
+<li><p>服务划分的边界不容易掌握，服务并不是越微越好，盲目的划分带来很多问题，增加通信、调度成本；</p></li>
+<li><p>没有成熟的框架和运维工具支持，使得微服务在服务之间调用、发现、部署以及依赖管理上都存在一些难点，反而增加了整个架构的复杂度，带来的难处可能远大于其好处；</p></li>
+<li><p>现有微服务的设计多采用Rest风格的HTTP接口，服务之间调用是同步的，容易发生严重的滚雪球似的崩溃现象，整个集群的瓶颈类似木桶效应，由最弱的服务决定，通常整体表现更差。</p></li>
+</ol>
+<p>我们期待有一种比较成熟完备的框架能够比较完美的表达<strong>DDD</strong>设计模式，同时也能够解决微服务所带来的各种问题，目前看来Actor Model对于表达<strong>DDD</strong>模式具有天然的优势，不同的Actor之间天然存在边界，每个Actor处理自己相关的业务逻辑，如果需要其他Actor帮助，通过发消息的形式来驱动，可以说用Actor Model实现<strong>DDD</strong>风格的软件设计，从微观到宏观上完成了领域驱动的统一，微观上在进程内的微线程级别对领域进行了划分，也就是Actor本身，在宏观角度进程（微服务）之间也通过Actor无差别的消息发送形式屏蔽了这些差别，使得构造<strong>DDD</strong>风格的集群非常容易，且由于结合了事件驱动形式，整个软件架构可以都是Reactive的，运行效率也会非常高。从开发角度可以认为整个软件架构集群是一个整体，在服务内部和外部之间采用统一的事件驱动形式，完美的统一了不同层次的设计和表现，只是在生产上根据需要优化不同领域或者服务所需要的资源以及所在的物理节点的位置。Akka就是一种Actor Model的实现，采用Scala语言，具有良好的DSL和运行效率，可以作为实现<strong>DDD</strong>+EDA的完美的结合，基于<strong>DDD</strong>和EDA来构造微服务的架构，可以解决上边所说的微服务带来的负面问题，而Lagom恰好正是这么一个框架，下边会详细介绍。</p>
+<p>说了太多领域驱动设计和事件驱动架构，这两者都比较容易理解，下边着重说一下在<strong>DDD</strong>设计中，或者说在所有的软件设计中，最核心的数据对象的设计和操作的一些形式，软件表面上提供的是服务，但核心都是这些服务所操作的数据，对于非计算密集型的业务场景，性能瓶颈主要也是由于频繁的数据操作引起的，比如说数据库IO操作，所以可以说处理好了这部分，就解决了绝大部分的性能问题，而CQRS就是一个比较有趣的概念，在某些场景可以发挥奇效，同时CQRS这种命令端和查询端的划分以及设计技巧，也是领域驱动设计在数据操作甚至也是服务操作的一种特例设计，代表了<strong>DDD</strong>的一种特色。当然具体决定要不要使用CQRS这种风格来处理数据实体操作，要看具体的业务场景是否适合。</p>
+<div class="section" id="cqrs">
+<h2>CQRS<a class="headerlink" href="#cqrs" title="永久链接至标题">¶</a></h2>
+<p>CQRS主张读写分离，广义的CQRS在很多层面上可以实现，比如数据库的主从部署，但是典型的CQRS应该指的是读/写比例非常高的应用，可以在框架或者程序业务逻辑中分别优化读写的领域，通常CQRS主要应用在<strong>DDD</strong>开发模式中，配合事件驱动来保证全异步的处理过程，最大化利用系统资源，同时具有非常高的可扩展性，稳定性较强。全异步的CQRS在遇到峰值并发时可以有更强的自保能力，不至于出现雪崩效果，通过消息中间件缓存未处理的消息，削峰填谷，而传统的REST风格的微服务会因为同步的等待请求返回结果导致其他请求不能正常接受处理，使系统不可用。Lagom就是一个<strong>DDD</strong>模式的微服务框架，其中的持久化层就采用了CQRS风格，以非常优秀的AKKA作为底层实现基础，Lagom的CQRS自然也是全异步且支持ES消息溯源的。</p>
+<p>说到CQRS首先要提Event Souring，事件溯源是CQRS的一种实现技巧，通常用在C端，数据不再是通过增删改查反应在数据库的一条记录，而是由一系列的事件以及注册在这些事件上的操作所结合起来产生的一种数据状态，类似于时光机器，需要通过快照和Apply后续所有的事件来获得数据最新的状态。使用ES的C端不再有对数据的修改和删除等操作，有的只是事件和命令的插入，ES的一些优势和缺陷同时也是CQRS的一部分优点和缺点.</p>
+<p>首先说相对于CRUD</p>
+<p><strong>优势</strong>：</p>
+<ol class="simple">
+<li><p>只需要插入事件和命令到固化的数据库，速度比通过索引UPDATE快，尤其对于一些Write-Ahead-Loging的NOSQL数据库，写入速度会非常快</p></li>
+<li><p>全异步的事件驱动，相对于传统的同步数据库请求，改进明显，数据库不再是瓶颈</p></li>
+<li><p>可以随时回溯到某个状态，查看用户的一系列操作，容易查找问题</p></li>
+<li><p>所记录的事件可以用来进行BI分析，挖掘用户的隐藏属性，操作习惯，进行一些有价值的预测</p></li>
+</ol>
+<p><strong>缺点</strong>：</p>
+<ol class="simple">
+<li><p>事件数量非常大，存储是个问题</p></li>
+<li><p>数据状态的恢复比较慢，对于事件很多会长时间修改某一个实体的情况，虽然可以采用快照来快速恢复，但依然实时性差一些</p></li>
+<li><p>只保证最终一致性</p></li>
+<li><p>对重构很不友好，如果改变了某些数据结构设计，为了兼容以前的事件，需要多做一些处理</p></li>
+<li><p>不方便直接手动修改数据了，因为数据不存在一个最终状态，只有事件，修改Q端的结果并不能影响实际的数据状态，只会造成不一致</p></li>
+</ol>
+<p>In-Memory也是CQRS的一种优化手段，C端的持久化实体是加载到内存的，用户的请求只是需要修改内存的状态就可以返回，可以一秒钟处理远大于数据库能力数量的请求，而后期的事件和命令的持久化也是异步的基于消息的，最大化提高了写入速度。</p>
+<p>Group Commit，通过在业务逻辑端实现批量提交，减少对数据库的操作，成倍的提高请求的执行效率。</p>
+<p>Command，内存中加载对应的对象实体，接受命令并持久化命令，发送成功的事件交给事件处理部分，事件处理部分持久化事件并更新实体状态，更新状态后成功的事件继续发送给Q端视图，如果有需要的话，用来更新ReadSide所需要的数据的状态，这里就包括了以前经常用到的数据增删改查的操作，但一般也是很简单的对一张表的处理。整个操作都是异步的消息驱动的，保证写入速度很快，不会受制于数据对象和数据库阻抗失衡。</p>
+</div>
+<div class="section" id="query">
+<h2>Query<a class="headerlink" href="#query" title="永久链接至标题">¶</a></h2>
+<p>CQRS想到存在的问题</p>
+<ol class="simple">
+<li><p>异步通信的性能损耗，多次异步操作会严重依赖底层线程池对事件的处理，线程的切换等也会影响执行效率，最重要的是无法保证低延时，即使先进先出的队列也是可能需要切换线程来运行，即使很简单的操作延时也不会很低，起码是毫秒级别，在保证吞吐量和健壮性的时候，牺牲了低延时。这个有点吹毛求疵，其实对于有大量数据库请求的业务逻辑来说，这点Dispatcher的消耗是完全可以接受的，用全异步换来无阻塞，只是对于完全的内存处理的逻辑会降低响应速度，比如测试Hello World benchmark，当然这个没有什么实际意义了。</p></li>
+<li><p>创建聚合根Entity 需要在客户端创建其ID，而不能依赖Database等设备来生成自增长的ID，因为实际数据库生成ID是一读一写的过程，跟CQRS的思想相冲突。如果交由某个AggregateRoot来管理ID，又会造成性能瓶颈，降低性能，不过也不会比数据库更慢，只是有通信消耗。</p></li>
+<li><p>Query数据所用的View也需要数据库支持，Q节点通过接收C节点持久化Event同时修改State成功之后的新的事件，用来更新视图，一般来说适合简单的Select操作，不推荐Join等涉及多个表的操作，可以考虑使用Document形式存储，嵌入保存相关联的数据模型。</p></li>
+<li><p>对于简单的业务类型不推荐CQRS，只是增加复杂性，只有对于业务逻辑复杂，一次完整的事件需要很多后续的响应的时候才适合，比如用户发了一个微信，后期有很多的额外工作要做，不只是保存一条消息文本，还要更新用户的活跃时间，下载消息所包含的多媒体信息，并推送给某个客服人员等等这种业务逻辑，而对于传统的表单类型，比如提交一个办公用品申请这种用户操作，明显CRUD更直观简单，不产生后续的操作。</p></li>
+<li><p>对于秒杀和抢火车票这种峰值很高的业务类型，CQRS可以让系统不局限于数据库的处理能力，适用于的这种业务的特点一般实体的关联非常少，某个命令只需要修改一个实体，不用同时考虑多个实体的状态来决定下一步要做什么，更简单集中，只是并发很大。另外业务模型要足够稳定，尽量避免重构，类似的还有股市等交易系统，需要大家并发很大的对某一些实体进行修改，通常新只是新产生交易记录，很少对以前的数据进行修改，用户动作基本上完全按照time serial的形式，符合事件驱动的特征，有个实践例子是某交易系统使用CQRS模式实现了每秒上百万的并发，基于IN MEMORY和ES可以使得并发尽可能的迅速，用户可以接受一定时间的交易延迟，不需要马上看到交易的结果，天生适合事件驱动和CQRS。</p></li>
+</ol>
+<p>总得来说，使用CQRS可以解决一些目前互联网存在的一些问题，但是也只适合某些特定的领域，并不是普适的，而事件驱动可以应用在所有的场景，并没有什么副作用</p>
+</div>
+</div>
+<div class="section" id="id1">
+<h1>领域驱动设计的特点<a class="headerlink" href="#id1" title="永久链接至标题">¶</a></h1>
+<p>领域驱动的核心应用场景就是解决复杂业务的设计问题，其特点与这一核心主题息息相关：</p>
+<ol class="simple">
+<li><p>分层架构与职责划分：领域驱动设计很好的遵循了关注点分离的原则，提出了成熟、清晰的分层架构。同时对领域对象进行了明确的策略和职责划分，让领域对象和现实世界中的业务形成良好的映射关系，为领域专家与开发人员搭建了沟通的桥梁。</p></li>
+<li><p>复用：在领域驱动设计中，领域对象是核心，每个领域对象都是一个相对完整的内聚的业务对象描述，所以可以形成直接的复用。同时设计过程是基于领域对象而不是基于数据库的 Schema，所以整个设计也是可以复用的。</p></li>
+<li><p>使用场景：适合具备复杂业务逻辑的软件系统，对软件的可维护性和扩展性要求比较高。不适用简单的增删改查业务</p></li>
+</ol>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">目录</a></h3>
+  <ul>
+<li><a class="reference internal" href="#"><strong>DDD</strong>领域驱动设计相关知识总结</a><ul>
+<li><a class="reference internal" href="#cqrs">CQRS</a></li>
+<li><a class="reference internal" href="#query">Query</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#id1">领域驱动设计的特点</a></li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="领域驱动设计之领域模型.html" title="上一章">领域驱动设计之领域模型</a></li>
+      <li>Next: <a href="../java/微服务2.0技术栈选型手册.html" title="下一章">微服务2.0技术栈选型手册</a></li>
+  </ul></li>
+</ul>
+  <div role="note" aria-label="source link">
+    <h3>本页</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/arch/领域驱动设计相关知识总结.md.txt"
+            rel="nofollow">显示源代码</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">快速搜索</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="转向" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    
+    <div class="footer" role="contentinfo">
+        &#169; 版权所有 2019, slow-snail.
+      由 <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2 创建。
+    </div>
+    
+
+  </body>
+</html>

@@ -1,0 +1,193 @@
+
+<!DOCTYPE html>
+
+<html xmlns="http://www.w3.org/1999/xhtml" lang="zh">
+  <head>
+    <meta charset="utf-8" />
+    <title>JVM十问 &#8212; snail-lib  文档</title>
+    <link rel="stylesheet" href="../_static/flasky.css" type="text/css" />
+    <link rel="stylesheet" href="../_static/pygments.css" type="text/css" />
+    <script type="text/javascript" id="documentation_options" data-url_root="../" src="../_static/documentation_options.js"></script>
+    <script type="text/javascript" src="../_static/jquery.js"></script>
+    <script type="text/javascript" src="../_static/underscore.js"></script>
+    <script type="text/javascript" src="../_static/doctools.js"></script>
+    <script type="text/javascript" src="../_static/language_data.js"></script>
+    <link rel="index" title="索引" href="../genindex.html" />
+    <link rel="search" title="搜索" href="../search.html" />
+    <link rel="next" title="领域驱动设计之领域模型" href="../arch/领域驱动设计之领域模型.html" />
+    <link rel="prev" title="java集合" href="java-collection.html" />
+     
+    
+    <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9">
+
+  </head><body>
+    
+    
+
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>导航</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="../genindex.html" title="总目录"
+             accesskey="I">索引</a></li>
+        <li class="right" >
+          <a href="../arch/领域驱动设计之领域模型.html" title="领域驱动设计之领域模型"
+             accesskey="N">下一页</a> |</li>
+        <li class="right" >
+          <a href="java-collection.html" title="java集合"
+             accesskey="P">上一页</a> |</li>
+        <li class="nav-item nav-item-0"><a href="../index.html">snail-lib  文档</a> &#187;</li> 
+      </ul>
+    </div>  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <div class="section" id="jvm">
+<h1>JVM十问<a class="headerlink" href="#jvm" title="永久链接至标题">¶</a></h1>
+<div class="section" id="q1-jvm">
+<h2><strong>Q1：JVM管理的内存结构是怎样的？</strong><a class="headerlink" href="#q1-jvm" title="永久链接至标题">¶</a></h2>
+<p>Java虚拟机在执行Java程序的过程中会把他所管理的内存划分为若干个不同的数据区域。《Java虚拟机规范》中规定了JVM所管理的内存需要包括一下几个运行时区域：</p>
+<img src="..\_static\jvm-1.webp" ><p>Java虚拟机运行时数据区域主要包含了PC寄存器（程序计数器）、Java虚拟机栈、本地方法栈、Java堆、方法区以及运行时常量池。</p>
+<p>各个区域有各自不同的作用，关于各个区域的作用就不在本文中相信介绍了。</p>
+<p>但是，需要注意的是，上面的区域划分只是逻辑区域，规范对于有些区域的限制是比较松的，所以不同的虚拟机厂商在实现上，甚至是同一款虚拟机的不同版本也是不尽相同的。</p>
+</div>
+<div class="section" id="q2">
+<h2><strong>Q2：不同的虚拟机在实现运行时内存的时候有什么区别？</strong><a class="headerlink" href="#q2" title="永久链接至标题">¶</a></h2>
+<p>前面提到过《Java虚拟机规范》定义的JVM运行时所需的内存区域，不同的虚拟机实现上有所不同，而在这么多区域中，规范对于方法区的管理是最宽松的，规范中关于这部分的描述如下：</p>
+<p>方法区在虚拟机启动的时候创建，虽然方法区是堆的逻辑组成部分，但是简单的虚拟机实现可以选择在这个区域不实现垃圾收集与压缩。本版本的规范也不限定实现方法区的内存位置和代码编译的管理策略。方法区的容量可以是固定的，也可以随着程序执行的需求动态扩展，并在不需要过多的空间时自行收缩。方法区在实际内存空间站可以是不连续的。</p>
+<p>这一规定，可以说是给了虚拟机厂商很大的自由。</p>
+<p>虚拟机规范对方法区实现的位置并没有明确要求，在最著名的HotSopt虚拟机实现中（在Java 8 之前），方法区仅是逻辑上的独立区域，在物理上并没有独立于堆而存在，而是位于永久代中。所以，这时候方法区也是可以被垃圾回收的。</p>
+<p>实践证明，JVM中存在着大量的声明短暂的对象，还有一些生命周期比较长的对象。为了对他们采用不同的收集策略，采用了分代收集算法，所以HotSpot虚拟机把的根据对象的年龄不同，把堆分位新生代、老年代和永久代。</p>
+<p>在Java 8中 ，HotSpot虚拟机移除了永久代，使用本地内存来存储类元数据信息并称之为：元空间（Metaspace）</p>
+<img src="..\_static\jvm-2.webp" ><p>￼</p>
+</div>
+<div class="section" id="q3">
+<h2><strong>Q3：运行时数据区中哪些区域是线程共享的？哪些是独享的？</strong><a class="headerlink" href="#q3" title="永久链接至标题">¶</a></h2>
+<p>在JVM运行时内存区域中，PC寄存器、虚拟机栈和本地方法栈是线程独享的。</p>
+<p>而Java堆、方法区是线程共享的。但是值得注意的是，Java堆其实还未每一个线程单独分配了一块<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650124457&amp;idx=1&amp;sn=1c33947700dfb28048df4a913b434077&amp;chksm=f36bad88c41c249ea854b371a1c8597959e2e35c2890bdd6a5945df0b568bdfc980d1dd2cf2b&amp;scene=21#wechat_redirect">TLAB</a>空间，这部分空间在分配时是线程独享的，在使用时是线程共享的。（<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650124457&amp;idx=1&amp;sn=1c33947700dfb28048df4a913b434077&amp;chksm=f36bad88c41c249ea854b371a1c8597959e2e35c2890bdd6a5945df0b568bdfc980d1dd2cf2b&amp;scene=21#wechat_redirect">TLAB介绍</a>）</p>
+</div>
+<div class="section" id="q4-jvm">
+<h2><strong>Q4：除了JVM运行时内存以外，还有什么区域可以用吗？</strong><a class="headerlink" href="#q4-jvm" title="永久链接至标题">¶</a></h2>
+<p>除了我们前面介绍的虚拟机运行时数据区以外，还有一部分内存也被频繁使用，他不是运行时数据区的一部分，也不是Java虚拟机规范中定义的内存区域，他就是——直接内存。</p>
+<p>直接内存的分配不受Java堆大小的限制，但是他还是会收到服务器总内存的影响。</p>
+<p>在JDK 1.4中引入的NIO中，引入了一种基于Channel和Buffer的I/O方式，他可以使用Native函数直接分配堆外内存，然后通过一个存储在Java堆中的DirectByteBuffer对象作为这块内存的应用进行操作。</p>
+<img src="..\_static\jvm-3.webp" ><p>￼</p>
+</div>
+<div class="section" id="q5">
+<h2><strong>Q5：堆和栈的区别是什么？</strong><a class="headerlink" href="#q5" title="永久链接至标题">¶</a></h2>
+<p>堆和栈（虚拟机栈）是完全不同的两块内存区域，一个是线程独享的，一个是线程共享的，二者之间最大的区别就是存储的内容不同：</p>
+<p>堆中主要存放对象实例。
+栈（局部变量表）中主要存放各种基本数据类型、对象的引用。</p>
+</div>
+<div class="section" id="q6-java">
+<h2><strong>Q6：Java中的数组是存储在堆上还是栈上的？</strong><a class="headerlink" href="#q6-java" title="永久链接至标题">¶</a></h2>
+<p>在Java中，数组同样是一个对象，所以对象在内存中如何存放同样适用于数组；</p>
+<p>所以，数组的实例是保存在堆中，而数组的引用是保存在栈上的。</p>
+<img src="..\_static\jvm-4.webp" ><p>￼</p>
+</div>
+<div class="section" id="q7-java">
+<h2><strong>Q7：Java中的对象创建有多少种方式？</strong><a class="headerlink" href="#q7-java" title="永久链接至标题">¶</a></h2>
+<p>Java中共有5种方式可以创建一个对象。</p>
+<p>最简单的方式就是使用new关键字。</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">new</span> <span class="n">User</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>除此以外，还可以使用反射机制创建对象：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">newInstance</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>或者使用Constructor类的newInstance：</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">Constructor</span><span class="o">&amp;</span><span class="n">lt</span><span class="p">;</span><span class="n">User</span><span class="o">&amp;</span><span class="n">gt</span><span class="p">;</span> <span class="n">constructor</span> <span class="o">=</span> <span class="n">User</span><span class="o">.</span><span class="n">class</span><span class="o">.</span><span class="n">getConstructor</span><span class="p">();</span>
+<span class="n">User</span> <span class="n">user</span> <span class="o">=</span> <span class="n">constructor</span><span class="o">.</span><span class="n">newInstance</span><span class="p">();</span>
+</pre></div>
+</div>
+<p>除此之外还可以使用clone方法和反序列化的方式，这两种方式不常用并且代码比较复杂，就不在这里展示了，感兴趣的可以自行了解下。</p>
+</div>
+<div class="section" id="q8-java">
+<h2><strong>Q8：Java中对象创建的过程是怎么样的？</strong><a class="headerlink" href="#q8-java" title="永久链接至标题">¶</a></h2>
+<p>对于一个普通的Java对象的创建，大致过程如下：</p>
+<p>1、虚拟机遇到new指令，到常量池定位到这个类的符号引用。
+2、检查符号引用代表的类是否被加载、解析、初始化过。
+3、虚拟机为对象分配内存。
+4、虚拟机将分配到的内存空间都初始化为零值。
+5、虚拟机对对象进行必要的设置。
+6、执行方法，成员变量进行初始化。</p>
+</div>
+<div class="section" id="q9-java">
+<h2><strong>Q9：Java中的对象一定在堆上分配内存吗？</strong><a class="headerlink" href="#q9-java" title="永久链接至标题">¶</a></h2>
+<p>前面我们说过，Java堆中主要保存了对象实例，但是，随着JIT编译期的发展与<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650121615&amp;idx=1&amp;sn=00d412f68fe58dceab6d13fdfefac113&amp;chksm=f36bb8aec41c31b8d62069e2663345c0452ebdded331616496637e19b2cad72725f6ce90daec&amp;scene=21#wechat_redirect">逃逸分析</a>技术逐渐成熟，<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650121307&amp;idx=1&amp;sn=5526473d0248cca8385d2a18ba6b25af&amp;chksm=f36bb97ac41c306c354ebf0335cd2fd77cac03f3434894e4e5b44a01754a5494b04350d26d14&amp;scene=21#wechat_redirect">栈上分配</a>、标量替换优化技术将会导致一些微妙的变化，所有的对象都分配到堆上也渐渐变得不那么“绝对”了。</p>
+<p>其实，在编译期间，JIT会对代码做很多优化。其中有一部分优化的目的就是减少内存堆分配压力，其中一种重要的技术叫做逃逸分析。</p>
+<p>如果JIT经过逃逸分析，发现有些对象没有逃逸出方法，那么有可能堆内存分配会被优化成栈内存分配。（关于逃逸分析和栈上分配可以参考：<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650121615&amp;idx=1&amp;sn=00d412f68fe58dceab6d13fdfefac113&amp;chksm=f36bb8aec41c31b8d62069e2663345c0452ebdded331616496637e19b2cad72725f6ce90daec&amp;scene=21#wechat_redirect">深入理解Java中的逃逸分析</a>、<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=2650121307&amp;idx=1&amp;sn=5526473d0248cca8385d2a18ba6b25af&amp;chksm=f36bb97ac41c306c354ebf0335cd2fd77cac03f3434894e4e5b44a01754a5494b04350d26d14&amp;scene=21#wechat_redirect">对象并不一定都是在堆上分配内存的</a>）</p>
+<img src="..\_static\jvm-5.webp" ><p>￼</p>
+</div>
+<div class="section" id="q10-dump">
+<h2><strong>Q10：怎么如何获取堆和栈的dump文件？</strong><a class="headerlink" href="#q10-dump" title="永久链接至标题">¶</a></h2>
+<p>Java Dump，Java虚拟机的运行时快照。将Java虚拟机运行时的状态和信息保存到文件。</p>
+<p>可以使用在服务器上使用<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=402312019&amp;idx=1&amp;sn=97736feb967ecbffb454fa037015ad6d&amp;chksm=7964d6724e135f64a5c0d65e41afbeac45700dd91149375f99071731954e855e13b11cd6c30b&amp;scene=21#wechat_redirect">jmap命令</a>来获取堆dump，使用<a class="reference external" href="http://mp.weixin.qq.com/s?__biz=MzI3NzE0NjcwMg==&amp;mid=402296484&amp;idx=1&amp;sn=8e7fc8197a216afb590b17e15f9b721e&amp;chksm=796493854e131a932b3dd53839820eaba022cb87a601062b6bf6a574d742cd8e92a707432173&amp;scene=21#wechat_redirect">jstack命令</a>来获取线程的调用栈dump。</p>
+</div>
+</div>
+
+
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+  <h3><a href="../index.html">目录</a></h3>
+  <ul>
+<li><a class="reference internal" href="#">JVM十问</a><ul>
+<li><a class="reference internal" href="#q1-jvm"><strong>Q1：JVM管理的内存结构是怎样的？</strong></a></li>
+<li><a class="reference internal" href="#q2"><strong>Q2：不同的虚拟机在实现运行时内存的时候有什么区别？</strong></a></li>
+<li><a class="reference internal" href="#q3"><strong>Q3：运行时数据区中哪些区域是线程共享的？哪些是独享的？</strong></a></li>
+<li><a class="reference internal" href="#q4-jvm"><strong>Q4：除了JVM运行时内存以外，还有什么区域可以用吗？</strong></a></li>
+<li><a class="reference internal" href="#q5"><strong>Q5：堆和栈的区别是什么？</strong></a></li>
+<li><a class="reference internal" href="#q6-java"><strong>Q6：Java中的数组是存储在堆上还是栈上的？</strong></a></li>
+<li><a class="reference internal" href="#q7-java"><strong>Q7：Java中的对象创建有多少种方式？</strong></a></li>
+<li><a class="reference internal" href="#q8-java"><strong>Q8：Java中对象创建的过程是怎么样的？</strong></a></li>
+<li><a class="reference internal" href="#q9-java"><strong>Q9：Java中的对象一定在堆上分配内存吗？</strong></a></li>
+<li><a class="reference internal" href="#q10-dump"><strong>Q10：怎么如何获取堆和栈的dump文件？</strong></a></li>
+</ul>
+</li>
+</ul>
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="../index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="java-collection.html" title="上一章">java集合</a></li>
+      <li>Next: <a href="../arch/领域驱动设计之领域模型.html" title="下一章">领域驱动设计之领域模型</a></li>
+  </ul></li>
+</ul>
+  <div role="note" aria-label="source link">
+    <h3>本页</h3>
+    <ul class="this-page-menu">
+      <li><a href="../_sources/java/jvm.md.txt"
+            rel="nofollow">显示源代码</a></li>
+    </ul>
+   </div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">快速搜索</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="../search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" />
+      <input type="submit" value="转向" />
+    </form>
+    </div>
+</div>
+<script type="text/javascript">$('#searchbox').show(0);</script>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+
+
+    
+    <div class="footer" role="contentinfo">
+        &#169; 版权所有 2019, slow-snail.
+      由 <a href="http://sphinx-doc.org/">Sphinx</a> 2.1.2 创建。
+    </div>
+    
+
+  </body>
+</html>
