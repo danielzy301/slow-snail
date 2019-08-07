@@ -13,8 +13,10 @@
 # import os
 # import sys
 # sys.path.insert(0, os.path.abspath('.'))
+# 避免出现无 content.rst 的错误
 master_doc = 'index'
 
+# 支持markdown
 from recommonmark.parser import CommonMarkParser
 
 source_parsers = {
@@ -44,6 +46,7 @@ extensions = ['sphinx.ext.autodoc',
     'sphinx.ext.viewcode',
     'sphinx.ext.githubpages']
 
+# 避免出现中文乱码
 latex_elements = {
     'inputenc': ''
 }
