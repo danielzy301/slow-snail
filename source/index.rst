@@ -15,6 +15,7 @@
    java/jvm.md
    java/juc.md
    java/redis.md
+   db/mysql_backup.md
    arch/领域驱动设计之领域模型.md
    arch/领域驱动设计相关知识总结.md
    java/微服务2.0技术栈选型手册.md
