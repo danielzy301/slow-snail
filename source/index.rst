@@ -19,6 +19,7 @@
    arch/领域驱动设计之领域模型.md
    arch/领域驱动设计相关知识总结.md
    java/微服务2.0技术栈选型手册.md
+   arch/微服务体系的深度治理.md
    technology-leadership/一个很懂业务的资深技术 Leader 的技术管理成长之路.md
    technology-selection/didi.md
    technology-selection/ebay.md
